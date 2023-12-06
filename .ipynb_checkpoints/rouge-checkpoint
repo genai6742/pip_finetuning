@@ -1,0 +1,61 @@
+
+from collections import Counter
+import numpy as np
+
+def ngram(text, n):
+    """Function to generate n-grams from text."""
+    words = text.split()
+    return [tuple(words[i:i+n]) for i in range(len(words)-n+1)]
+
+def rouge_n(evaluated_ngrams, reference_ngrams):
+    """Function to calculate ROUGE-N score."""
+    ref_count = len(reference_ngrams)
+    eval_count = len(evaluated_ngrams)
+
+    # Count overlapping ngrams
+    overlap_ngrams = Counter(evaluated_ngrams) & Counter(reference_ngrams)
+    overlap_count = sum(overlap_ngrams.values())
+
+    # Calculate precision, recall, and F1 score
+    precision = overlap_count / eval_count if eval_count > 0 else 0
+    recall = overlap_count / ref_count if ref_count > 0 else 0
+    f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
+
+    return {"precision": precision, "recall": recall, "f1": f1}
+
+def rouge_l(evaluated_text, reference_text):
+    """Function to calculate ROUGE-L score."""
+    def lcs_length(x, y):
+        """Function to calculate length of the Longest Common Subsequence (LCS)."""
+        if not x or not y:
+            return 0
+        xx, yy = x[:-1], y[:-1]
+        if x[-1] == y[-1]:
+            return lcs_length(xx, yy) + 1
+        else:
+            return max(lcs_length(xx, y), lcs_length(x, yy))
+
+    eval_words = evaluated_text.split()
+    ref_words = reference_text.split()
+    lcs = lcs_length(eval_words, ref_words)
+    
+    # Calculate precision, recall, and F1 score
+    precision = lcs / len(eval_words) if len(eval_words) > 0 else 0
+    recall = lcs / len(ref_words) if len(ref_words) > 0 else 0
+    f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
+
+    return {"precision": precision, "recall": recall, "f1": f1}
+
+# Example human and machine summaries
+human_summary = "Person A is planning a business trip to New York next month and hopes to visit the Metropolitan Museum and see a Broadway show. Person B recommends trying New York-style pizza."
+machine_summary = "Person A will go to New York for business and wants to see the Metropolitan Museum and a Broadway show. Person B suggests visiting the Met and enjoying New York pizza."
+
+# Calculate ROUGE-1 and ROUGE-2 scores
+rouge_1_score = rouge_n(ngram(machine_summary, 1), ngram(human_summary, 1))
+rouge_2_score = rouge_n(ngram(machine_summary, 2), ngram(human_summary, 2))
+
+# Calculate ROUGE-L score
+rouge_l_score = rouge_l(machine_summary, human_summary)
+
+rouge_1_score, rouge_2_score, rouge_l_score
+
